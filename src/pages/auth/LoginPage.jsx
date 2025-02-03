@@ -9,11 +9,16 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { getAuthErrorMessage } from "../../lib/utils/auth-errors";
+import {
+  setAuthPersistence,
+  startSessionTimeout,
+} from "../../lib/firebase/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -33,9 +38,25 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      // Set persistence based on Remember me
+      await setAuthPersistence(rememberMe);
+
+      // Sign in
+      const { user } = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      // Start session timeout if not remembering
+      if (!rememberMe) {
+        startSessionTimeout();
+      }
+
+      console.log("Successfully signed in:", user.email);
       navigate("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
@@ -47,10 +68,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Set persistence based on Remember me
+      await setAuthPersistence(rememberMe);
+
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const { user } = await signInWithPopup(auth, provider);
+
+      // Start session timeout if not remembering
+      if (!rememberMe) {
+        startSessionTimeout();
+      }
+
+      console.log("Successfully signed in with Google:", user.email);
       navigate("/dashboard");
     } catch (error) {
+      console.error("Google login error:", error);
       setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
@@ -83,7 +115,9 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 text-black text-muted-foreground">or</span>
+            <span className="px-2 text-muted-foreground text-black">
+              or 
+            </span>
           </div>
         </div>
 
@@ -134,7 +168,23 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-muted-foreground"
+              >
+                Remember me
+              </label>
+            </div>
             <Link
               to="/forgot-password"
               className="text-sm font-medium text-primary hover:text-primary/90"
@@ -151,7 +201,7 @@ export default function LoginPage() {
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              "Continue"
+              "Sign in"
             )}
           </button>
         </form>

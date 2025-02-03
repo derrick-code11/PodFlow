@@ -80,4 +80,5 @@ Thumbs.db
 .vercel
 .netlify
 instructions/
+firebase-rules/
 .cursorrules

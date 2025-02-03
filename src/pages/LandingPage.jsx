@@ -132,7 +132,7 @@ export default function LandingPage() {
             <div className="mt-10 space-y-4">
               <Link
                 to="/login"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 Get Started <ArrowRight className="ml-2 w-5 h-5" />
               </Link>

@@ -8,9 +8,17 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import NewEpisodePage from "./pages/dashboard/NewEpisodePage";
+import EpisodesPage from "./pages/dashboard/EpisodesPage";
+import EpisodePage from "./pages/dashboard/EpisodePage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { useSessionTimeout } from "./hooks/useSessionTimeout";
 
 function App() {
+  // Initialize session timeout monitoring
+  useSessionTimeout();
+
   return (
     <Router>
       <Routes>
@@ -20,19 +28,42 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected Routes - will add later */}
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              {/* <Dashboard /> */}
-              <div>Dashboard (Coming Soon)</div>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/episodes"
+          element={
+            <ProtectedRoute>
+              <EpisodesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/episodes/new"
+          element={
+            <ProtectedRoute>
+              <NewEpisodePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/episodes/:episodeId"
+          element={
+            <ProtectedRoute>
+              <EpisodePage />
             </ProtectedRoute>
           }
         />
 
-        {/* Catch all route */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
