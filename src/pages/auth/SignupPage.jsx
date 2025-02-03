@@ -9,6 +9,7 @@ import {
   signInWithPopup,
   updateProfile,
 } from "firebase/auth";
+import { getAuthErrorMessage } from "../../lib/utils/auth-errors";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function SignupPage() {
 
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +63,7 @@ export default function SignupPage() {
       await signInWithPopup(auth, provider);
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

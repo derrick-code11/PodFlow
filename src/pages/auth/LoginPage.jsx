@@ -8,6 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
+import { getAuthErrorMessage } from "../../lib/utils/auth-errors";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +51,7 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
