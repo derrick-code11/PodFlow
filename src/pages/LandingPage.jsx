@@ -116,7 +116,7 @@ export default function LandingPage() {
             alt="Studio microphone background"
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/80 to-background/95" />
+          <div className="absolute inset-0" />
         </div>
 
         {/* Hero Content */}
@@ -125,7 +125,7 @@ export default function LandingPage() {
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-primary">
               PodFlow
             </h1>
-            <p className="mt-6 text-xl md:text-2xl text-muted-foreground">
+            <p className="mt-6 text-xl md:text-2xl text-muted-foreground text-white">
               Transform your podcast episodes into structured show notes with
               AI-powered automation
             </p>
@@ -138,7 +138,7 @@ export default function LandingPage() {
               </Link>
               <div className="flex items-center justify-center gap-4 text-muted-foreground">
                 <Star className="w-5 h-5 text-yellow-400" fill="currentColor" />
-                <span>Trusted by podcasters worldwide</span>
+                <span className="text-white">Trusted by podcasters worldwide</span>
               </div>
             </div>
           </div>
@@ -290,9 +290,9 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background" />
         </div>
         <div className="relative container mx-auto px-4">
-          <div className="max-w-[1200px] mx-auto text-center">
+          <div className="max-w-[1200px] text-center">
             <div className="max-w-2xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 mx-auto max-w-[15ch] leading-tight">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center leading-tight">
                 Ready to streamline your podcast workflow?
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 mx-auto max-w-[30ch] leading-relaxed">

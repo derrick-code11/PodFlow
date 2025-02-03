@@ -84,10 +84,8 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -102,7 +100,6 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color:greenyellow;
   cursor: pointer;
   transition: border-color 0.25s;
 }
