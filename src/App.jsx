@@ -12,6 +12,7 @@ import DashboardPage from "./pages/dashboard/DashboardPage";
 import NewEpisodePage from "./pages/dashboard/NewEpisodePage";
 import EpisodesPage from "./pages/dashboard/EpisodesPage";
 import EpisodePage from "./pages/dashboard/EpisodePage";
+import SettingsPage from "./pages/dashboard/SettingsPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
 
@@ -58,6 +59,14 @@ function App() {
           element={
             <ProtectedRoute>
               <EpisodePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />
