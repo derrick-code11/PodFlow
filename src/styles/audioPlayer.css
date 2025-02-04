@@ -1,0 +1,98 @@
+/* Custom styles for range inputs */
+.audio-player-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Progress bar - Chrome & Safari */
+.audio-player-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.audio-player-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: #2563eb;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.audio-player-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Progress bar - Firefox */
+.audio-player-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.audio-player-range::-moz-range-thumb {
+  background-color: #2563eb;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.audio-player-range::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Volume slider specific styles */
+.volume-slider {
+  width: 100px;
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+  height: 3px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  height: 12px;
+  width: 12px;
+  margin-top: -4.5px;
+}
+
+.volume-slider::-moz-range-track {
+  height: 3px;
+}
+
+.volume-slider::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+}
+
+/* Focus styles */
+.audio-player-range:focus {
+  outline: none;
+}
+
+.audio-player-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.audio-player-range:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* Hover effect on track */
+.audio-player-range:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+.audio-player-range:hover::-moz-range-track {
+  height: 6px;
+}
