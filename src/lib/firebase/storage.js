@@ -1,6 +1,8 @@
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
-import { storage, db, auth } from "../firebase";
+import { storage, db, auth } from "./index";
+import { generateShowNotes } from "../ai/showNotes";
+import { getUserSettings } from "./settings";
 
 /**
  * Upload a file to Firebase Storage and save metadata to Firestore
@@ -21,6 +23,9 @@ export async function uploadEpisode(file, onProgress) {
     // Create episode document in Firestore
     const episodeRef = doc(collection(db, "episodes"));
 
+    // Get user settings
+    const settings = await getUserSettings(user.uid);
+
     // Save initial metadata
     await setDoc(episodeRef, {
       id: episodeRef.id,
@@ -39,66 +44,47 @@ export async function uploadEpisode(file, onProgress) {
     // Upload file with progress monitoring
     const uploadTask = uploadBytesResumable(storageRef, file);
 
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload progress:", progress);
-          if (onProgress) onProgress(progress);
-        },
-        (error) => {
-          // Handle unsuccessful uploads
-          console.error("Upload error:", error);
-          // Update status to error state
-          setDoc(
-            episodeRef,
-            {
-              status: "error",
-              error: error.message,
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true }
-          ).catch(console.error);
-          reject(error);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log("Upload completed. Download URL:", downloadURL);
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        if (onProgress) onProgress(progress);
+      },
+      (error) => {
+        console.error("Upload error:", error);
+        throw error;
+      }
+    );
 
-            // Update episode document with download URL but keep status as processing
-            await setDoc(
-              episodeRef,
-              {
-                downloadURL,
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
+    // Wait for upload to complete
+    await uploadTask;
 
-            resolve({
-              id: episodeRef.id,
-              downloadURL,
-            });
-          } catch (error) {
-            console.error("Error getting download URL:", error);
-            // Update status to error state
-            await setDoc(
-              episodeRef,
-              {
-                status: "error",
-                error: error.message,
-                updatedAt: serverTimestamp(),
-              },
-              { merge: true }
-            );
-            reject(error);
-          }
-        }
+    // Get download URL
+    const downloadURL = await getDownloadURL(storageRef);
+
+    // If auto-generate is enabled, start show notes generation
+    if (settings.autoGenerateShowNotes) {
+      generateShowNotes(user.uid, episodeRef.id, downloadURL).catch((error) => {
+        console.error("Error generating show notes:", error);
+      });
+    } else {
+      // If auto-generate is disabled, set status to ready
+      await setDoc(
+        episodeRef,
+        {
+          status: "ready",
+          downloadURL,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
       );
-    });
+    }
+
+    return {
+      id: episodeRef.id,
+      downloadURL,
+    };
   } catch (error) {
     console.error("Error in uploadEpisode:", error);
     throw error;
@@ -115,6 +101,9 @@ export async function saveVideoLink(linkData) {
   try {
     const episodeRef = doc(collection(db, "episodes"));
 
+    // Get user settings
+    const settings = await getUserSettings(user.uid);
+
     await setDoc(episodeRef, {
       id: episodeRef.id,
       userId: user.uid,
@@ -127,31 +116,24 @@ export async function saveVideoLink(linkData) {
       updatedAt: serverTimestamp(),
     });
 
-    // Start processing the video link (you can add actual processing logic here)
-    // For now, we'll just set it to ready state after a short delay
-    setTimeout(async () => {
-      try {
-        await setDoc(
-          episodeRef,
-          {
-            status: "ready",
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      } catch (error) {
-        console.error("Error updating video link status:", error);
-        await setDoc(
-          episodeRef,
-          {
-            status: "error",
-            error: error.message,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      }
-    }, 2000);
+    // If auto-generate is enabled, start show notes generation
+    if (settings.autoGenerateShowNotes) {
+      generateShowNotes(user.uid, episodeRef.id, linkData.url).catch(
+        (error) => {
+          console.error("Error generating show notes:", error);
+        }
+      );
+    } else {
+      // If auto-generate is disabled, set status to ready
+      await setDoc(
+        episodeRef,
+        {
+          status: "ready",
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
 
     return {
       id: episodeRef.id,

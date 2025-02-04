@@ -4,7 +4,7 @@ import {
   browserSessionPersistence,
   signOut,
 } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth } from "./index";
 
 // Session timeout duration in milliseconds (default: 24 hours)
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
