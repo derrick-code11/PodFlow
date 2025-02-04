@@ -20,6 +20,10 @@ firebase-debug.log
 firebase-debug.*.log
 .firebaserc
 ui-debug.log
+# Firebase Service Account Keys
+*serviceAccountKey*.json
+*service-account*.json
+*firebase-adminsdk*.json
 
 # Build outputs
 dist/
@@ -72,6 +76,12 @@ pnpm-debug.log*
 public/generated/
 dist-ssr/
 *.local
+
+# API Keys and Secrets
+*api-keys*.json
+*secrets*.json
+*credentials*.json
+*config*.json
 
 # Misc
 .DS_Store
