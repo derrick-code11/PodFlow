@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../../lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
 import {
   Upload,
   Link as LinkIcon,
@@ -13,6 +15,12 @@ import {
 } from "lucide-react";
 import DashboardLayout from "../../components/dashboard/DashboardLayout";
 import { uploadEpisode, saveVideoLink } from "../../lib/firebase/storage";
+import {
+  processAudioFile,
+  createEpisode,
+  processVideoLink,
+} from "../../lib/firebase/episodes";
+import { getVideoMetadata } from "../../lib/utils/video";
 
 // Platform regex and utilities
 const PLATFORMS = {
@@ -71,7 +79,10 @@ const PLATFORMS = {
   },
 };
 
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB in bytes
+
 export default function NewEpisodePage() {
+  const [user, loading, error] = useAuthState(auth);
   const [isUploading, setIsUploading] = useState(false);
   const [episodeLink, setEpisodeLink] = useState("");
   const [uploadError, setUploadError] = useState("");
@@ -80,6 +91,13 @@ export default function NewEpisodePage() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const navigate = useNavigate();
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/login");
+    }
+  }, [user, loading, navigate]);
 
   // Detect platform and get preview
   const handleLinkChange = async (e) => {
@@ -174,8 +192,11 @@ export default function NewEpisodePage() {
     }
 
     // Validate file size (100MB limit)
-    if (file.size > 100 * 1024 * 1024) {
-      setUploadError("File size must be less than 100MB");
+    if (file.size > MAX_FILE_SIZE) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      setUploadError(
+        `File size (${fileSizeMB}MB) must be less than 100MB. Please compress your audio file first.`
+      );
       return;
     }
 
@@ -188,9 +209,26 @@ export default function NewEpisodePage() {
       "audio/*": [".mp3", ".m4a", ".wav", ".aac"],
     },
     maxFiles: 1,
+    maxSize: MAX_FILE_SIZE,
+    onDropRejected: (rejectedFiles) => {
+      const file = rejectedFiles[0];
+      if (file.size > MAX_FILE_SIZE) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        setUploadError(
+          `File size (${fileSizeMB}MB) must be less than 100MB. Please compress your audio file first.`
+        );
+      } else {
+        setUploadError("Invalid file. Please upload a supported audio file.");
+      }
+    },
   });
 
   const handleUpload = async () => {
+    if (!user) {
+      setUploadError("Please login to upload episodes");
+      return;
+    }
+
     if (!uploadedFile && !episodeLink) {
       setUploadError("Please upload a file or provide a link");
       return;
@@ -198,20 +236,56 @@ export default function NewEpisodePage() {
 
     setIsUploading(true);
     setUploadError("");
+    setUploadProgress(0);
 
     try {
       if (uploadedFile) {
-        // Handle file upload
-        const result = await uploadEpisode(uploadedFile, (progress) => {
-          setUploadProgress(progress);
+        // Process audio file
+        const processedData = await processAudioFile(uploadedFile, user.uid);
+
+        // Create episode with processed data
+        const episode = await createEpisode(user.uid, {
+          title: uploadedFile.name.replace(/\.[^/.]+$/, ""), // Remove extension
+          sourceType: "upload",
+          fileName: uploadedFile.name,
+          fileType: uploadedFile.type,
+          size: uploadedFile.size,
+          audioUrl: processedData.audioUrl,
+          transcript: processedData.transcript,
+          segments: processedData.segments,
+          showNotes: processedData.showNotes,
+          status: "ready",
         });
-        console.log("File uploaded successfully:", result);
-        navigate("/dashboard/episodes");
-      } else if (linkPreview) {
-        // Handle video link
-        const result = await saveVideoLink(linkPreview);
-        console.log("Link saved successfully:", result);
-        navigate("/dashboard/episodes");
+
+        navigate(`/dashboard/episodes/${episode.id}`);
+      } else if (episodeLink) {
+        try {
+          // Get video metadata first
+          const metadata = await getVideoMetadata(episodeLink);
+
+          // Create episode with video metadata
+          const episode = await createEpisode(user.uid, {
+            title: metadata.title,
+            sourceType: linkPreview.type,
+            sourceUrl: episodeLink,
+            sourceId: linkPreview.videoId,
+            thumbnail: metadata.thumbnail,
+            author: metadata.author,
+            duration: metadata.duration,
+            status: "pending", // Changed to pending since we can't process in browser
+            message: "Please upload the audio file separately for processing",
+          });
+
+          navigate(`/dashboard/episodes/${episode.id}`);
+        } catch (error) {
+          if (error.message.includes("not available in the browser version")) {
+            setUploadError(
+              "Direct video processing is not available. Please download the audio and upload it as a file."
+            );
+          } else {
+            throw error;
+          }
+        }
       }
     } catch (error) {
       console.error("Upload error:", error);

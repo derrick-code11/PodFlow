@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import { auth } from "../../lib/firebase";
+import { auth } from "../../lib/firebase/index";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -115,9 +115,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 text-muted-foreground text-black">
-              or 
-            </span>
+            <span className="px-2 text-muted-foreground text-black">or</span>
           </div>
         </div>
 

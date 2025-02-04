@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 import AuthLayout from "./AuthLayout";
-import { auth } from "../../lib/firebase";
+import { auth } from "../../lib/firebase/index";
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -10,6 +10,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { getAuthErrorMessage } from "../../lib/utils/auth-errors";
+import { initializeUserSettings } from "../../lib/firebase/settings";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      // Create user account
       const { user } = await createUserWithEmailAndPassword(
         auth,
         formData.email,
@@ -46,8 +48,12 @@ export default function SignupPage() {
         displayName: formData.name,
       });
 
+      // Initialize user settings
+      await initializeUserSettings(user.uid);
+
       navigate("/dashboard");
     } catch (error) {
+      console.error("Signup error:", error);
       setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);
@@ -60,9 +66,14 @@ export default function SignupPage() {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const { user } = await signInWithPopup(auth, provider);
+
+      // Initialize user settings
+      await initializeUserSettings(user.uid);
+
       navigate("/dashboard");
     } catch (error) {
+      console.error("Google signup error:", error);
       setError(getAuthErrorMessage(error));
     } finally {
       setIsLoading(false);

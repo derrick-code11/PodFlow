@@ -5,7 +5,6 @@ import { auth } from "../../lib/firebase";
 import {
   fetchUserEpisodes,
   deleteEpisode,
-  exportEpisode,
 } from "../../lib/firebase/episodes";
 import {
   Table,
@@ -19,7 +18,6 @@ import {
   MoreHorizontal,
   FileEdit,
   Trash2,
-  Download,
   Loader2,
   Youtube,
   Video,
@@ -32,9 +30,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuSeparator,
 } from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
@@ -159,17 +154,6 @@ export default function EpisodesPage() {
     } finally {
       setDeleteDialogOpen(false);
       setEpisodeToDelete(null);
-    }
-  };
-
-  // Handle episode export
-  const handleExport = async (episode, format) => {
-    try {
-      await exportEpisode(episode, format);
-      setError(null);
-    } catch (err) {
-      setError("Failed to export episode");
-      console.error("Error exporting episode:", err);
     }
   };
 
@@ -375,26 +359,6 @@ export default function EpisodesPage() {
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleExport(episode, "markdown")
-                                }
-                              >
-                                Markdown
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleExport(episode, "pdf")}
-                              >
-                                PDF
-                              </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDeleteClick(episode)}
