@@ -15,66 +15,70 @@ import EpisodePage from "./pages/dashboard/EpisodePage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
+import { Toaster } from "./components/ui/toaster";
 
 function App() {
   // Initialize session timeout monitoring
   useSessionTimeout();
 
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/episodes"
-          element={
-            <ProtectedRoute>
-              <EpisodesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/episodes/new"
-          element={
-            <ProtectedRoute>
-              <NewEpisodePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/episodes/:episodeId"
-          element={
-            <ProtectedRoute>
-              <EpisodePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/episodes"
+            element={
+              <ProtectedRoute>
+                <EpisodesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/episodes/new"
+            element={
+              <ProtectedRoute>
+                <NewEpisodePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/episodes/:episodeId"
+            element={
+              <ProtectedRoute>
+                <EpisodePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+      <Toaster />
+    </>
   );
 }
 

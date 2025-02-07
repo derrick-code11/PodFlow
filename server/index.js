@@ -10,25 +10,33 @@ const os = require("os");
 const OpenAI = require("openai");
 const { getFirestore } = require("firebase-admin/firestore");
 
+// First check OpenAI API key
 if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
+// Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Initialize Firebase first
 const serviceAccount = require("./serviceAccountKey.json");
-
 initializeApp({
   credential: cert(serviceAccount),
-  storageBucket: "podflow-e865b.appspot.com",
+  storageBucket: "podflow-e865b.firebasestorage.app",
 });
 
+// Then initialize Firebase services
 const bucket = getStorage().bucket();
 const db = getFirestore();
+
+// Initialize Express app
 const app = express();
 const port = 3001;
+
+// Then require routes that use Firebase services
+const compression = require("./routes/compression");
 
 app.use(
   cors({
@@ -147,13 +155,9 @@ async function processAudio(episodeId, userId, fileName, filePath) {
     fs.unlinkSync(tempInputPath);
     fs.unlinkSync(tempOutputPath);
 
-    const segments = transcriptionResult.segments.map((segment) => ({
-      start: segment.start,
-      end: segment.end,
-      text: segment.text,
-    }));
-
-    const transcript = segments.map((segment) => segment.text).join(" ");
+    const transcript = transcriptionResult.segments
+      .map((segment) => segment.text)
+      .join(" ");
 
     compressionStatus.set(episodeId, {
       status: "completed",
@@ -161,13 +165,10 @@ async function processAudio(episodeId, userId, fileName, filePath) {
       compressedFilePath,
       audioUrl: url,
       transcript: transcript,
-      segments: segments,
+      segments: transcriptionResult.segments,
       showNotes: {
         summary: "",
-        timestamps: segments.map((segment) => ({
-          time: new Date(segment.start * 1000).toISOString().substr(14, 5),
-          description: segment.text,
-        })),
+        timestamps: [], // Empty array for timestamps
       },
       needsCompression: false,
     });
@@ -185,6 +186,24 @@ async function processAudio(episodeId, userId, fileName, filePath) {
     });
   }
 }
+
+function formatTimestamp(seconds) {
+  const pad = (num) => String(Math.floor(num)).padStart(2, "0");
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+}
+
+// Routes
+app.use("/api", compression);
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message || "Something went wrong!" });
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

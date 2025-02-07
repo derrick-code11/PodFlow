@@ -10,7 +10,7 @@ import {
 import { cn } from "../../lib/utils";
 import "../../styles/audioPlayer.css";
 
-export default function AudioPlayer({ src, onTimeUpdate }) {
+export default function AudioPlayer({ src, onTimeUpdate, timestamps = [] }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -19,6 +19,7 @@ export default function AudioPlayer({ src, onTimeUpdate }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [currentSegment, setCurrentSegment] = useState(null);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -47,16 +48,24 @@ export default function AudioPlayer({ src, onTimeUpdate }) {
 
     const handleTimeUpdate = () => {
       if (!isDragging) {
-        setCurrentTime(audio.currentTime);
+        const currentTime = audio.currentTime;
+        setCurrentTime(currentTime);
+
+        // Find current segment based on timestamp
+        const segment = timestamps.find(
+          (ts) => currentTime >= ts.start && currentTime <= ts.end
+        );
+        setCurrentSegment(segment);
+
         if (onTimeUpdate) {
-          onTimeUpdate(audio.currentTime);
+          onTimeUpdate(currentTime, segment);
         }
       }
     };
 
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    return () => audio.removeEventListener("timeupdate", handleTimeUpdate);
-  }, [onTimeUpdate, isDragging]);
+    audio.addEventListener("timeupload", handleTimeUpdate);
+    return () => audio.removeEventListener("timeupload", handleTimeUpdate);
+  }, [onTimeUpdate, isDragging, timestamps]);
 
   const togglePlay = () => {
     if (audioRef.current.paused) {
@@ -108,9 +117,14 @@ export default function AudioPlayer({ src, onTimeUpdate }) {
   };
 
   const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const skipForward = () => {
@@ -119,6 +133,16 @@ export default function AudioPlayer({ src, onTimeUpdate }) {
 
   const skipBackward = () => {
     audioRef.current.currentTime -= 15;
+  };
+
+  const jumpToTime = (timestamp) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = timestamp;
+      if (!isPlaying) {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    }
   };
 
   return (

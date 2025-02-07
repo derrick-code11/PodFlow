@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   getDoc,
   limit,
+  setDoc,
 } from "firebase/firestore";
 import {
   ref,
@@ -26,9 +27,10 @@ import { generateShowNotes } from "../utils/openai";
 import { getUserSettings } from "./settings";
 import { processVideo } from "../utils/videoProcessing";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; 
-const CHUNK_SIZE = 10 * 1024 * 1024; 
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const CHUNK_SIZE = 10 * 1024 * 1024;
 const WHISPER_MAX_SIZE = 25 * 1024 * 1024;
+const WORDS_PER_PAGE = 500; // Roughly 4-5 minutes of speech
 
 // Fetch episodes for a user
 export async function fetchUserEpisodes(userId) {
@@ -175,7 +177,7 @@ export async function exportEpisode(episode, format = "markdown") {
 // Helper function to calculate text height
 function calculateTextHeight(text, maxWidth) {
   const averageCharWidth = 5;
-  const lineHeight = 10; 
+  const lineHeight = 10;
   const charsPerLine = Math.floor(maxWidth / averageCharWidth);
   const lines = Math.ceil(text.length / charsPerLine);
   return lines * lineHeight;
@@ -420,7 +422,7 @@ export async function uploadEpisodeMedia(userId, episodeId, file) {
     await updateDoc(episodeRef, {
       mediaUrl: downloadURL,
       mediaType: file.type,
-      status: "completed", 
+      status: "completed",
       updatedAt: serverTimestamp(),
     });
 
@@ -480,6 +482,135 @@ export async function updateEpisode(episodeId, data) {
     });
   } catch (error) {
     console.error("Error updating episode:", error);
+    throw error;
+  }
+}
+
+/**
+ * Splits transcript text into pages of roughly equal size
+ */
+function paginateTranscript(transcript) {
+  if (!transcript) return [];
+
+  // Split by sentences to avoid cutting in the middle of one
+  const sentences = transcript.match(/[^.!?]+[.!?]+/g) || [];
+  const pages = [];
+  let currentPage = [];
+  let wordCount = 0;
+
+  for (const sentence of sentences) {
+    const sentenceWords = sentence.trim().split(/\s+/).length;
+
+    if (wordCount + sentenceWords > WORDS_PER_PAGE && currentPage.length > 0) {
+      // Start a new page
+      pages.push(currentPage.join(" ").trim());
+      currentPage = [sentence];
+      wordCount = sentenceWords;
+    } else {
+      // Add to current page
+      currentPage.push(sentence);
+      wordCount += sentenceWords;
+    }
+  }
+
+  // Add the last page if there's content
+  if (currentPage.length > 0) {
+    pages.push(currentPage.join(" ").trim());
+  }
+
+  return pages;
+}
+
+/**
+ * Updates episode with paginated transcript
+ */
+export async function updateTranscript(episodeId, transcript) {
+  try {
+    console.log("Starting transcript update for episode:", episodeId);
+
+    if (!transcript) {
+      console.warn("No transcript provided for pagination");
+      return;
+    }
+
+    const episodeRef = doc(db, "episodes", episodeId);
+    const pages = paginateTranscript(transcript);
+
+    console.log("Paginated transcript:", {
+      totalPages: pages.length,
+      firstPageLength: pages[0]?.length,
+      hasContent: pages.some((page) => page.length > 0),
+    });
+
+    const updateData = {
+      transcript: transcript,
+      transcriptPages: pages,
+      totalPages: pages.length,
+      updatedAt: new Date(),
+    };
+
+    await setDoc(episodeRef, updateData, { merge: true });
+    console.log("Successfully updated transcript with pages");
+
+    return {
+      success: true,
+      totalPages: pages.length,
+    };
+  } catch (error) {
+    console.error("Error updating transcript:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get specific page of transcript
+ */
+export async function getTranscriptPage(episodeId, pageNumber) {
+  try {
+    console.log("Fetching transcript page:", { episodeId, pageNumber });
+
+    const episodeRef = doc(db, "episodes", episodeId);
+    const episode = await getDoc(episodeRef);
+
+    if (!episode.exists()) {
+      throw new Error("Episode not found");
+    }
+
+    const data = episode.data();
+
+    // If we don't have pages but have a transcript, create pages
+    if (!data.transcriptPages && data.transcript) {
+      console.log("No pages found but transcript exists, creating pages...");
+      const pages = paginateTranscript(data.transcript);
+      await setDoc(
+        episodeRef,
+        {
+          transcriptPages: pages,
+          totalPages: pages.length,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      return {
+        page: pages[pageNumber - 1] || "",
+        totalPages: pages.length,
+        currentPage: pageNumber,
+      };
+    }
+
+    console.log("Returning transcript page:", {
+      hasPage: !!data.transcriptPages?.[pageNumber - 1],
+      totalPages: data.totalPages || 1,
+    });
+
+    return {
+      page: data.transcriptPages?.[pageNumber - 1] || "",
+      totalPages: data.totalPages || 1,
+      currentPage: pageNumber,
+    };
+  } catch (error) {
+    console.error("Error getting transcript page:", error);
     throw error;
   }
 }
